@@ -161,8 +161,8 @@
     </div>
 
     <script>
-        const BACKEND_URL = 'https://bfhl-api.onrender.com'; // Replace with your Render URL
-
+        const BACKEND_URL = 'https://bajaj-fullstack-test.onrender.com';
+        const API = BACKEND_URL + "/bfhl";
         async function submitData() {
             const inputData = document.getElementById('inputData').value.trim();
             const responseSection = document.getElementById('responseSection');
@@ -195,7 +195,7 @@
                 responseBox.textContent = '';
 
                 // Make API call
-                const response = await fetch(`${BACKEND_URL}/bfhl`, {
+                const response = await  fetch(API, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -203,7 +203,12 @@
                     body: JSON.stringify({ data })
                 });
 
-                const result = await response.json();
+                let result;
+                try {
+                    result = await response.json();
+                    } catch {
+                throw new Error("Invalid response from server");
+}
 
                 // Show result
                 status.textContent = response.ok ? 
