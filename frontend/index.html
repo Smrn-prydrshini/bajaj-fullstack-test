@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BFHL API Tester</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        .header {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        .header h1 {
+            font-size: 2.2em;
+            margin-bottom: 10px;
+        }
+        .content {
+            padding: 40px;
+        }
+        .input-group {
+            margin-bottom: 30px;
+        }
+        label {
+            display: block;
+            margin-bottom: 10px;
+            font-weight: 600;
+            color: #333;
+            font-size: 1.1em;
+        }
+        textarea {
+            width: 100%;
+            height: 120px;
+            padding: 15px;
+            border: 2px solid #e1e5e9;
+            border-radius: 10px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            resize: vertical;
+            transition: border-color 0.3s;
+        }
+        textarea:focus {
+            outline: none;
+            border-color: #4facfe;
+        }
+        .submit-btn {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            font-size: 1.1em;
+            font-weight: 600;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: transform 0.2s;
+            width: 100%;
+        }
+        .submit-btn:hover {
+            transform: translateY(-2px);
+        }
+        .submit-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+        .response-section {
+            margin-top: 30px;
+        }
+        .response-box {
+            background: #f8f9fa;
+            border: 2px solid #e9ecef;
+            border-radius: 10px;
+            padding: 20px;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            max-height: 500px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+        .status {
+            padding: 10px 20px;
+            border-radius: 25px;
+            font-weight: 600;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        .status.loading {
+            background: #fff3cd;
+            color: #856404;
+        }
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+        }
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        @media (max-width: 768px) {
+            .content {
+                padding: 20px;
+            }
+            .header h1 {
+                font-size: 1.8em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🛠️ BFHL API Tester</h1>
+            <p>Binary Forest Hierarchy Logic - Test your graph data</p>
+        </div>
+        <div class="content">
+            <div class="input-group">
+                <label for="inputData">Enter JSON data (array of edges):</label>
+                <textarea id="inputData" placeholder='[
+  "A->B",
+  "A->C",
+  "B->D",
+  "B->E",
+  "C->F",
+  "C->G"
+]'>[
+  "A->B",
+  "A->C",
+  "B->D",
+  "B->E",
+  "C->F",
+  "C->G"
+]</textarea>
+            </div>
+            <button class="submit-btn" onclick="submitData()">Submit & Analyze</button>
+            
+            <div class="response-section" id="responseSection" style="display: none;">
+                <div class="status" id="status"></div>
+                <div class="response-box" id="responseBox"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const BACKEND_URL = 'https://bfhl-api.onrender.com'; // Replace with your Render URL
+
+        async function submitData() {
+            const inputData = document.getElementById('inputData').value.trim();
+            const responseSection = document.getElementById('responseSection');
+            const status = document.getElementById('status');
+            const responseBox = document.getElementById('responseBox');
+            const submitBtn = document.querySelector('.submit-btn');
+
+            if (!inputData) {
+                alert('Please enter some data');
+                return;
+            }
+
+            try {
+                // Parse and validate JSON
+                let data;
+                try {
+                    data = JSON.parse(inputData);
+                    if (!Array.isArray(data)) throw new Error('Data must be an array');
+                } catch (e) {
+                    alert('Invalid JSON. Please check your input.');
+                    return;
+                }
+
+                // Show loading state
+                submitBtn.disabled = true;
+                submitBtn.textContent = 'Analyzing...';
+                responseSection.style.display = 'block';
+                status.textContent = 'Analyzing graph structure...';
+                status.className = 'status loading';
+                responseBox.textContent = '';
+
+                // Make API call
+                const response = await fetch(`${BACKEND_URL}/bfhl`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ data })
+                });
+
+                const result = await response.json();
+
+                // Show result
+                status.textContent = response.ok ? 
+                    `Analysis complete! Found ${result.summary.total_trees} trees, ${result.summary.total_cycles} cycles` :
+                    'Error occurred during analysis';
+                status.className = `status ${response.ok ? 'success' : 'error'}`;
+                responseBox.textContent = JSON.stringify(result, null, 2);
+
+            } catch (error) {
+                console.error('Error:', error);
+                status.textContent = `Network error: ${error.message}`;
+                status.className = 'status error';
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Submit & Analyze';
+            }
+        }
+
+        // Allow Enter key to submit
+        document.getElementById('inputData').addEventListener('keydown', (e) => {
+            if (e.ctrlKey && e.key === 'Enter') {
+                submitData();
+            }
+        });
+    </script>
+</body>
+</html>
